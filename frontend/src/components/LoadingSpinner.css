@@ -1,0 +1,142 @@
+/* LoadingSpinner.css */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  padding: 2rem;
+}
+
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(2px);
+}
+
+.spinner {
+  position: relative;
+  display: inline-block;
+}
+
+.spinner-ring {
+  position: absolute;
+  border: 4px solid transparent;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+}
+
+.spinner-small .spinner {
+  width: 24px;
+  height: 24px;
+}
+
+.spinner-small .spinner-ring {
+  width: 24px;
+  height: 24px;
+  border-width: 2px;
+}
+
+.spinner-medium .spinner {
+  width: 40px;
+  height: 40px;
+}
+
+.spinner-medium .spinner-ring {
+  width: 40px;
+  height: 40px;
+  border-width: 3px;
+}
+
+.spinner-large .spinner {
+  width: 60px;
+  height: 60px;
+}
+
+.spinner-large .spinner-ring {
+  width: 60px;
+  height: 60px;
+  border-width: 4px;
+}
+
+.spinner-ring:nth-child(1) {
+  animation-delay: -0.45s;
+  border-top-color: #3b82f6;
+}
+
+.spinner-ring:nth-child(2) {
+  animation-delay: -0.3s;
+  border-top-color: #06b6d4;
+}
+
+.spinner-ring:nth-child(3) {
+  animation-delay: -0.15s;
+  border-top-color: #10b981;
+}
+
+.spinner-ring:nth-child(4) {
+  border-top-color: #f59e0b;
+}
+
+.loading-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #6b7280;
+  font-weight: 500;
+  text-align: center;
+  animation: pulse-text 2s ease-in-out infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse-text {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .loading-overlay {
+    background: rgba(17, 24, 39, 0.9);
+  }
+  
+  .loading-text {
+    color: #d1d5db;
+  }
+  
+  .spinner-ring:nth-child(1) {
+    border-top-color: #60a5fa;
+  }
+  
+  .spinner-ring:nth-child(2) {
+    border-top-color: #22d3ee;
+  }
+  
+  .spinner-ring:nth-child(3) {
+    border-top-color: #34d399;
+  }
+  
+  .spinner-ring:nth-child(4) {
+    border-top-color: #fbbf24;
+  }
+}

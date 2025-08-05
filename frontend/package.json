@@ -15,12 +15,13 @@
     "chart.js": "^4.4.0",
     "react-chartjs-2": "^5.2.0"
   },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
-  },
+"scripts": {
+  "start": "react-scripts start",
+  "build": "react-scripts build",
+  "test": "react-scripts test",
+  "eject": "react-scripts eject",
+  "start:flask": "REACT_APP_API_URL=http://143.244.133.125:5000 npm start"
+},
   "eslintConfig": {
     "extends": [
       "react-app",

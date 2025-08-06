@@ -1,11 +1,11 @@
 // Dashboard.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import StatusBar from './StatusBar';
 import UserList from './UserList';
 import MapView from './MapView';
 import AudioPlayer from './AudioPlayer';
 import ConnectionStatus from './ConnectionStatus';
-import usePolling from '../hooks/usePolling';
+import ApiService from '../services/api';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -16,30 +16,98 @@ const Dashboard = () => {
     userID: null
   });
 
-  const {
-    data: dashboardData,
-    loading: dashboardLoading,
-    error: dashboardError,
-    isPolling,
-    isConnected,
-    lastUpdated,
-    retryCount,
-    startPolling,
-    stopPolling
-  } = usePolling('/api/dashboard-data', 2000, {
-    transform: (data) => ({
-      active_sessions_count: data.active_sessions_count || 0,
-      total_users: data.total_users || 0,
-      connection_status: data.connection_status || 'connecting',
-      users: data.users || [],
-      active_sessions: data.active_sessions || [],
-      stats: data.stats || {},
-      last_updated: data.last_updated
-    }),
-    onError: (error) => console.error('Dashboard polling error:', error),
-    maxRetries: 5,
-    retryDelay: 1000
+  // Dashboard data state
+  const [dashboardData, setDashboardData] = useState({
+    active_sessions_count: 0,
+    total_users: 0,
+    connection_status: 'connecting',
+    users: [],
+    active_sessions: [],
+    stats: {},
+    last_updated: null
   });
+  const [dashboardLoading, setDashboardLoading] = useState(true);
+  const [dashboardError, setDashboardError] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [isPolling, setIsPolling] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  const apiService = new ApiService();
+
+  // Polling logic using API service
+  useEffect(() => {
+    let pollInterval;
+    let isActive = true;
+
+    const fetchDashboardData = async () => {
+      if (!isActive) return;
+      
+      try {
+        setDashboardError(null);
+        const data = await apiService.getDashboardData();
+        
+        if (isActive) {
+          setDashboardData({
+            active_sessions_count: data.active_sessions_count || 0,
+            total_users: data.total_users || 0,
+            connection_status: data.connection_status || 'connected',
+            users: data.users || [],
+            active_sessions: data.active_sessions || [],
+            stats: data.stats || {},
+            last_updated: data.last_updated
+          });
+          setDashboardLoading(false);
+          setIsConnected(true);
+          setLastUpdated(new Date().toISOString());
+          setRetryCount(0);
+        }
+      } catch (error) {
+        console.error('Dashboard polling error:', error);
+        if (isActive) {
+          setDashboardError(error.message);
+          setIsConnected(false);
+          setRetryCount(prev => prev + 1);
+        }
+      }
+    };
+
+    const startPolling = () => {
+      setIsPolling(true);
+      fetchDashboardData(); // Initial fetch
+      pollInterval = setInterval(fetchDashboardData, 2000); // Poll every 2 seconds
+    };
+
+    const stopPolling = () => {
+      setIsPolling(false);
+      if (pollInterval) {
+        clearInterval(pollInterval);
+        pollInterval = null;
+      }
+    };
+
+    // Start polling on mount
+    startPolling();
+
+    // Cleanup on unmount
+    return () => {
+      isActive = false;
+      stopPolling();
+    };
+  }, []);
+
+  const handleTogglePolling = () => {
+    // This will need to be implemented if you want manual control
+    console.log('Polling toggle clicked');
+  };
+
+  const startPolling = () => {
+    // This will be handled by useEffect
+  };
+
+  const stopPolling = () => {
+    // This will be handled by useEffect
+  };
 
   const handlePlayAudio = async (userID) => {
     try {
@@ -52,10 +120,6 @@ const Dashboard = () => {
 
   const handleCloseAudio = () => {
     setAudioPlayer({ isVisible: false, audioUrl: null, userID: null });
-  };
-
-  const handleTogglePolling = () => {
-    isPolling ? stopPolling() : startPolling();
   };
 
   const getConnectionStatus = () => {

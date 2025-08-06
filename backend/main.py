@@ -29,7 +29,14 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",  # React development server
         "http://127.0.0.1:3000",  # Alternative localhost
-        "http://localhost:8000",  # Self-reference
+        "http://localhost:8000",  # Self-reference (FastAPI)
+        "http://localhost:5000",  # Flask server
+        "http://143.244.133.125:3000",  # VPS frontend
+        "http://143.244.133.125:5000",  # VPS Flask server
+        "http://143.244.133.125:8000",  # VPS FastAPI server
+        "http://143.244.133.125",  # VPS base
+        "https://143.244.133.125",  # VPS HTTPS
+        "*"  # Allow all origins for VPS setup (remove in production)
     ],
     allow_credentials=True,
     allow_methods=["*"],  # Allow all methods (GET, POST, etc.)

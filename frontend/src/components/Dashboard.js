@@ -118,7 +118,7 @@ const Dashboard = () => {
         <div className="footer-info">
           <span>🎉 Enhanced Dashboard</span>
           <span>•</span>
-          <span>Backend: Flask</span>
+          <span>Backend: Flask + FastAPI</span>
           <span>•</span>
           <span>Frontend: React</span>
           <span>•</span>

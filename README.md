@@ -1,8 +1,28 @@
 # 📱 Phone Monitoring Dashboard
 
-> **🎉 COMPLETE IMPLEMENTATION** - A production-ready, real-time dashboard for monitoring phone listening sessions with location tracking, interactive maps, and audio management.
+> **🎉 COMPLETE IMPLEMENTATION** - A production-ready, real-time dashboard for monitoring phone listening sessions with dual backend architecture (Flask + FastAPI), location tracking, interactive maps, and audio management.
 
-![Dashboard Preview](https://img.shields.io/badge/Status-Production%20Ready-brightgreen) ![React](https://img.shields.io/badge/React-18.2.0-blue) ![FastAPI](https://img.shields.io/badge/FastAPI-0.104.1-green) ![Leaflet](https://img.shields.io/badge/Leaflet-1.9.4-orange)
+![Dashboard Preview](https://img.shields.io/badge/Status-Production%20Ready-brightgreen) ![React](https://img.shields.io/badge/React-18.2.0-blue) ![Flask](https://img.shields.io/badge/Flask-Data%20Server-red) ![FastAPI](https://img.shields.io/badge/FastAPI-Dashboard%20API-green) ![Leaflet](https://img.shields.io/badge/Leaflet-1.9.4-orange)
+
+## 🏗️ **Dual Backend Architecture**
+This project uses a sophisticated dual backend setup:
+
+### **Flask Server (Port 5000)** - Primary Data Handler
+- Handles phone device uploads and audio recordings
+- Manages device authentication and data processing
+- Provides phone data API endpoints
+- **Primary data source** for the dashboard
+
+### **FastAPI Server (Port 8000)** - Dashboard & Analytics
+- Provides dashboard functionality and session management
+- Offers additional API endpoints for analytics
+- Handles HTML template rendering
+- Provides interactive API documentation
+
+### **React Frontend (Port 3000)** - User Interface
+- Connects primarily to Flask server for phone data
+- Uses FastAPI for enhanced dashboard features
+- Real-time polling and interactive map visualization
 
 ## ✨ Features
 
@@ -39,6 +59,7 @@
 ### Prerequisites
 - **Python 3.9 - 3.11** (NOT 3.12+)
 - **Node.js 18.x - 20.x LTS**
+- **Flask Server** running on VPS (port 5000)
 - **Git** for cloning
 
 ### Installation
@@ -46,10 +67,10 @@
 1. **Clone the repository**
    ```bash
    git clone <your-repo-url>
-   cd phone-dashboard
+   cd BUAS-Dashboard
    ```
 
-2. **Backend Setup**
+2. **Backend Setup (FastAPI Dashboard)**
    ```bash
    # Create and activate virtual environment
    python -m venv venv
@@ -68,7 +89,14 @@
    npm install
    ```
 
-4. **Run the Application**
+4. **Configure Environment**
+   ```bash
+   # Frontend will connect to Flask server on port 5000
+   # FastAPI dashboard runs on port 8000
+   # React frontend runs on port 3000
+   ```
+
+5. **Run the Application**
    
    **Option 1: VS Code (Recommended)**
    - Open project in VS Code
@@ -77,27 +105,59 @@
 
    **Option 2: Manual (Two terminals)**
    ```bash
-   # Terminal 1 - Backend
+   # Terminal 1 - FastAPI Backend (Dashboard)
    cd backend
-   uvicorn main:app --reload --host 127.0.0.1 --port 8000
+   uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-   # Terminal 2 - Frontend  
+   # Terminal 2 - React Frontend
    cd frontend
-   npm start
+   npm run start:flask  # Connects to Flask server on port 5000
    ```
 
-5. **Access the Application**
+6. **Access the Application**
    - **Dashboard**: http://localhost:3000
-   - **Backend API**: http://localhost:8000
+   - **Flask Data API**: http://143.244.133.125:5000 (VPS)
+   - **FastAPI Dashboard**: http://localhost:8000
    - **API Docs**: http://localhost:8000/docs
 
 ## 📁 Project Structure
 ```
-phone-dashboard/
-├── backend/                 # FastAPI Backend
-│   ├── main.py             # FastAPI application (404 lines)
+BUAS-Dashboard/
+├── backend/                 # FastAPI Dashboard Backend
+│   ├── main.py             # FastAPI application (426 lines)
 │   ├── database.py         # SQLAlchemy models & connection
 │   ├── crud.py             # Database operations
+│   ├── schemas.py          # Pydantic models for validation
+│   ├── requirements.txt    # Python dependencies
+│   └── .env.example        # Environment configuration template
+├── frontend/               # React Dashboard Frontend
+│   ├── src/
+│   │   ├── components/     # React components (9 files)
+│   │   │   ├── Dashboard.js        # Main dashboard (141 lines)
+│   │   │   ├── UserList.js         # User management interface
+│   │   │   ├── MapView.js          # Leaflet map integration
+│   │   │   ├── AudioPlayer.js      # Audio playback controls
+│   │   │   ├── StatusBar.js        # Connection status
+│   │   │   ├── LoadingSpinner.js   # Loading animations
+│   │   │   ├── ErrorBoundary.js    # Error handling
+│   │   │   ├── ErrorToast.js       # Error notifications
+│   │   │   └── ConnectionStatus.js # Connection monitoring
+│   │   ├── services/
+│   │   │   └── api.js              # Flask/FastAPI integration (246 lines)
+│   │   ├── hooks/
+│   │   │   └── usePolling.js       # Real-time data polling
+│   │   └── App.js                  # Main React app
+│   ├── package.json               # Dependencies & scripts
+│   ├── .env.production           # Production Flask server config
+│   └── public/
+├── ecosystem.config.js           # PM2 process management
+├── VPS-DEPLOYMENT.md            # Dual server deployment guide
+├── DEPLOYMENT.md               # Original deployment documentation
+├── context.txt                 # Development plan & architecture
+└── README.md                  # This file
+```
+
+**Note**: Flask server (port 5000) is managed separately on the VPS and handles the primary phone data.
 │   ├── schemas.py          # Pydantic data models
 │   ├── requirements.txt    # Python dependencies
 │   ├── phone_monitoring.db # SQLite database
@@ -134,28 +194,60 @@ phone-dashboard/
 
 ## 🔌 API Endpoints
 
-### Core Dashboard API
+### Flask Server (Port 5000) - Primary Data API
 ```http
-GET  /api/dashboard-data          # Real-time dashboard data
+GET  /api/dashboard-data          # Phone device data and uploads
+GET  /api/uploads/{filename}      # Audio file downloads
+POST /api/upload/audio/{device_id} # Audio file uploads (from phones)
+```
+
+### FastAPI Server (Port 8000) - Dashboard API
+```http
+GET  /api/dashboard-data          # Enhanced dashboard data
 POST /api/start-listening/{user_id}  # Start monitoring session
 POST /api/stop-listening/{user_id}   # Stop monitoring session
-GET  /api/audio/{user_id}/latest     # Get latest audio recording
+GET  /api/audio/{user_id}/latest     # Latest audio recording
+GET  /api/users                      # User list with status
+GET  /api/sessions/active            # Active listening sessions
+GET  /api/dashboard/stats            # Dashboard statistics
+GET  /api/recordings/recent          # Recent recordings list
+GET  /api/analytics/hourly-activity  # Activity analytics
+GET  /health                         # Health check endpoint
 ```
 
-### Additional Endpoints
-```http
-GET  /api/users                  # List all users with status
-GET  /api/sessions/active        # Get active sessions only
-GET  /health                     # Health check endpoint
-POST /api/upload-recording       # Upload audio recording
+## 🌐 Server Architecture
+
+### Data Flow
+```
+Phone Devices → Flask Server (5000) → Database/Storage
+                     ↓
+React Frontend (3000) ← Flask API (Primary Data)
+         ↓
+FastAPI Server (8000) ← Dashboard Features & Analytics
 ```
 
-### Example API Response
-```json
-{
-  "active_sessions_count": 23,
-  "total_users": 45,
-  "connection_status": "connected",
+## 📊 Dashboard Features
+
+### Real-time Data Updates
+- **2-second polling interval** for live data
+- **Connection status monitoring** with automatic reconnection
+- **Visual loading states** and error handling
+
+### Interactive Map Integration
+- **Leaflet.js** map with custom markers
+- **Status-based color coding** (red/gray/orange markers)
+- **Click-to-select** users from map
+- **Real-time location updates**
+
+### Audio Management
+- **HTML5 audio player** for latest recordings
+- **Direct audio streaming** from Flask server
+- **Audio file management** and download links
+
+### Search & Filter
+- **Real-time search** by user ID
+- **Status filtering** (listening/idle/offline)
+- **Responsive user list** with touch-friendly controls
   "users": [
     {
       "user_id": "user123",

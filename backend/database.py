@@ -6,16 +6,16 @@ from datetime import datetime
 import os
 from typing import Generator
 
-# Database URL - Replace with your Render PostgreSQL connection string
+# Database URL - Replace with your VPS PostgreSQL connection string
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://username:password@host:port/database"  # Replace with your actual Render URL
+    "postgresql://your_username:your_password@localhost:5432/phone_monitoring"  # Replace with your actual VPS database URL
 )
 
 # For local development, you can use SQLite
-if DATABASE_URL.startswith("postgresql://username"):
+if DATABASE_URL.startswith("postgresql://your_username"):
     DATABASE_URL = "sqlite:///./phone_monitoring.db"
-    print("Using SQLite for development - Replace with Render PostgreSQL URL")
+    print("Using SQLite for development - Replace with VPS PostgreSQL URL")
 
 # Create SQLAlchemy engine
 engine = create_engine(

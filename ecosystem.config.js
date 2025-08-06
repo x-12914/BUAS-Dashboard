@@ -1,12 +1,32 @@
 module.exports = {
   apps: [{
-    name: 'phone-dashboard-api',
+    name: 'phone-dashboard-fastapi',
     script: 'uvicorn',
-    args: 'main:app --host 0.0.0.0 --port 8000',
+    args: 'main:app --host 0.0.0.0 --port 8000 --reload',
     cwd: './backend',
-    interpreter: './venv/bin/python',
+    interpreter: 'python3',
     env: {
-      PYTHONPATH: './backend'
+      PYTHONPATH: './backend',
+      DATABASE_URL: process.env.DATABASE_URL || 'sqlite:///./phone_monitoring.db',
+      HOST: '0.0.0.0',
+      PORT: '8000'
+    },
+    env_production: {
+      PYTHONPATH: './backend',
+      DATABASE_URL: process.env.DATABASE_URL,
+      HOST: '0.0.0.0',
+      PORT: '8000',
+      DEBUG: 'false'
+    }
+  }, {
+    name: 'phone-dashboard-frontend',
+    script: 'serve',
+    args: '-s build -l 3000',
+    cwd: './frontend',
+    env: {
+      REACT_APP_API_URL: 'http://143.244.133.125:5000' // Points to Flask server
     }
   }]
+  // Note: Flask server (port 5000) should be managed separately
+  // as it's the main phone data handler
 }

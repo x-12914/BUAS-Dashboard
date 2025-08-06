@@ -1,23 +1,39 @@
-Phone Monitoring Dashboard - 4-Day Development Plan
+Phone Monitoring Dashboard - Dual Backend Architecture
 🏗️ ARCHITECTURE OVERVIEW
 Tech Stack
 
-Backend: FastAPI + PostgreSQL (Render database)
+Primary Backend: Flask Server (Port 5000) - Phone Data Handler
+Secondary Backend: FastAPI (Port 8000) - Dashboard & Analytics  
 Frontend: React + HTML5 Audio + Leaflet.js + Chart.js
 Real-time: HTTP Polling (2-second intervals)
-Deployment: Render.com
+Deployment: VPS (143.244.133.125)
 
-React Dashboard ←→ FastAPI Backend ←→ Render PostgreSQL
-     ↑                   ↑                    ↑
-   User Actions      API Endpoints       Phone Data
-   (Start/Stop)      (/api/...)         (recordings, users)
+Data Flow:
+Phone Devices → Flask Server (5000) → Database/Storage
+                     ↓
+React Dashboard (3000) ← Flask API (Primary Data)
+         ↓
+FastAPI Server (8000) ← Dashboard Features & Analytics
+
+DUAL BACKEND STRUCTURE:
+Flask Server (Port 5000):
+- Handles phone uploads and device management
+- Primary data source for phone recordings
+- Authentication: admin:supersecret
+- Main API endpoints for device data
+
+FastAPI Server (Port 8000): 
+- Dashboard functionality and session management
+- Additional analytics and reporting
+- Enhanced API documentation
+- Template rendering for dashboard
 
 
 
 
 phone-dashboard/
 ├── backend/
-│   ├── main.py              # FastAPI app
+│   ├── main.py              # FastAPI app (Dashboard & Analytics)
 │   ├── database.py          # DB connection & models
 │   ├── crud.py              # Database operations
 │   ├── schemas.py           # Pydantic models
@@ -33,11 +49,16 @@ phone-dashboard/
 │   │   ├── hooks/
 │   │   │   └── usePolling.js    # Real-time data hook
 │   │   ├── services/
-│   │   │   └── api.js           # API calls
+│   │   │   └── api.js           # Flask/FastAPI integration
 │   │   └── App.js
 │   ├── package.json
+│   ├── .env.production         # Flask server configuration
 │   └── public/
+├── ecosystem.config.js         # PM2 dual server management
+├── VPS-DEPLOYMENT.md          # Dual backend deployment guide
 └── README.md
+
+Note: Flask server (port 5000) runs separately and handles primary phone data
 
 
 4-DAY SPRINT PLAN
@@ -243,13 +264,21 @@ phone-dashboard/
 │   │   └── App.js
 │   └── package.json
 └── README.md
-🔌 API ENDPOINTS (Backend)
-pythonGET /api/dashboard-data          # All dashboard data
+🔌 API ENDPOINTS (Dual Backend)
+
+Flask Server (Port 5000) - Primary Data:
+GET /api/dashboard-data          # Phone device uploads and data
+GET /api/uploads/{filename}      # Audio file downloads  
+POST /api/upload/audio/{device_id} # Audio uploads from phones
+
+FastAPI Server (Port 8000) - Dashboard:
+GET /api/dashboard-data          # Enhanced dashboard data
 POST /api/start-listening/{user_id}   # Start monitoring user
 POST /api/stop-listening/{user_id}    # Stop monitoring user
 GET /api/audio/{user_id}/latest       # Get latest audio recording
 GET /api/users                        # Get all users with status
 GET /api/sessions/active              # Get active sessions only
+GET /health                           # Health check endpoint
 📊 DASHBOARD LAYOUT
 ┌─────────────────────────────────────────────┐
 │ 🔴 Active Sessions: 23 | 🟢 Connected     │ ← Status Bar

@@ -1,32 +1,39 @@
-# 🚀 Deployment Guide - Phone Monitoring Dashboard
+# 🚀 Deployment Guide - Dual Backend Phone Monitoring Dashboard
 
-> **Complete deployment instructions for Render.com and production environments**
+> **Complete deployment instructions for VPS with Flask + FastAPI architecture**
 
-![Render](https://img.shields.io/badge/Render-Ready-brightgreen) ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Compatible-blue) ![Production](https://img.shields.io/badge/Status-Deployment%20Ready-orange)
+![Flask](https://img.shields.io/badge/Flask-Primary%20Data%20Server-red) ![FastAPI](https://img.shields.io/badge/FastAPI-Dashboard%20API-green) ![React](https://img.shields.io/badge/React-Frontend-blue) ![Production](https://img.shields.io/badge/Status-Deployment%20Ready-orange)
 
 ## 📋 Overview
 
-This guide covers deploying the Phone Monitoring Dashboard to production using Render.com with:
-- **Backend**: FastAPI on Render Web Service with PostgreSQL
-- **Frontend**: React build deployed to Render Static Site
-- **Database**: Render PostgreSQL instance
-- **Storage**: Render Disk for audio recordings
+This guide covers deploying the Phone Monitoring Dashboard with dual backend architecture:
+- **Flask Server**: Primary phone data handler (port 5000) 
+- **FastAPI Server**: Dashboard and analytics API (port 8000)
+- **React Frontend**: User interface (port 3000)
+- **Database**: PostgreSQL for production, SQLite for development
+- **VPS Deployment**: 143.244.133.125
 
 ## 🏗️ Architecture Overview
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   React Frontend │────│  FastAPI Backend │────│   PostgreSQL    │
-│  (Static Site)   │    │  (Web Service)   │    │   (Database)    │
-│  Port: 443       │    │  Port: 10000     │    │  Port: 5432     │
+│   React Frontend │────│  Flask Server   │────│   Database      │
+│     (Port 3000)  │    │   (Port 5000)   │    │  + Storage      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-                                │
-                       ┌─────────────────┐
-                       │   Render Disk   │
-                       │ (Audio Storage) │
-                       │    /recordings  │
-                       └─────────────────┘
+         │                        │
+         └──────────────┐         │
+                        │         │
+               ┌─────────────────┐ │
+               │ FastAPI Server  │─┘
+               │  (Port 8000)    │
+               │   Dashboard     │
+               └─────────────────┘
 ```
+
+### Data Flow
+- **Phone Devices** → **Flask Server** (primary data)
+- **React Frontend** → **Flask Server** (phone data) + **FastAPI** (dashboard features)
+- **Both Servers** → **Shared Database** (user sessions, recordings)
 
 ## 🎯 Pre-Deployment Checklist
 

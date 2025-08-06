@@ -1,5 +1,5 @@
 // api.js - Updated for Flask server with /api routes
-const API_BASE_URL = 'http://143.244.133.125'; // Assuming you're using NGINX reverse proxy
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://143.244.133.125:5000'; // Flask server on port 5000
 
 const AUTH_HEADER = 'Basic ' + btoa('admin:supersecret');
 

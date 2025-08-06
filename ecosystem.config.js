@@ -1,5 +1,21 @@
 module.exports = {
   apps: [{
+    name: 'flask-server',
+    script: 'server.py',
+    cwd: '../BUAS',  // Assuming BUAS folder is moved to parent directory
+    interpreter: 'python3',
+    env: {
+      FLASK_ENV: 'development',
+      HOST: '0.0.0.0',
+      PORT: '5000'
+    },
+    env_production: {
+      FLASK_ENV: 'production',
+      HOST: '0.0.0.0',
+      PORT: '5000',
+      DEBUG: 'false'
+    }
+  }, {
     name: 'phone-dashboard-fastapi',
     script: 'uvicorn',
     args: 'main:app --host 0.0.0.0 --port 8000 --reload',
@@ -27,6 +43,4 @@ module.exports = {
       REACT_APP_API_URL: 'http://143.244.133.125:5000' // Points to Flask server
     }
   }]
-  // Note: Flask server (port 5000) should be managed separately
-  // as it's the main phone data handler
 }

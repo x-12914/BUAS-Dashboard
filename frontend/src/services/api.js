@@ -1,7 +1,6 @@
-// api.js - Updated for Flask server integration
-const API_BASE_URL = 'http://143.244.133.125:5000'; // Your Flask VPS server
+// api.js - Updated for Flask server with /api routes
+const API_BASE_URL = 'http://143.244.133.125'; // Assuming you're using NGINX reverse proxy
 
-// Basic Auth for Flask server
 const AUTH_HEADER = 'Basic ' + btoa('admin:supersecret');
 
 class ApiService {
@@ -9,13 +8,12 @@ class ApiService {
     this.baseURL = baseURL;
   }
 
-  // Generic request method with Flask auth
   async request(endpoint, options = {}) {
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': AUTH_HEADER, // Flask basic auth
+        'Authorization': AUTH_HEADER,
         ...options.headers,
       },
       ...options,
@@ -23,11 +21,9 @@ class ApiService {
 
     try {
       const response = await fetch(url, config);
-      
       if (!response.ok) {
         throw new Error(`API Error: ${response.status} - ${response.statusText}`);
       }
-
       return await response.json();
     } catch (error) {
       console.error(`API request failed for ${endpoint}:`, error);
@@ -35,63 +31,51 @@ class ApiService {
     }
   }
 
-  // Dashboard data endpoints - Map to Flask routes
   async getDashboardData() {
-    // Map Flask /dashboard/data to expected dashboard format
     try {
-      const flaskData = await this.request('/dashboard/data');
-      
-      // Transform Flask data to dashboard format
+      const flaskData = await this.request('/api/dashboard-data');
       return this.transformFlaskData(flaskData);
     } catch (error) {
-      // Return fallback data if Flask server is down
       return this.getFallbackData();
     }
   }
 
-  // Transform Flask upload data to dashboard user format
   transformFlaskData(flaskData) {
     const now = new Date().toISOString();
-    
-    // Group uploads by device_id to create "users"
     const deviceMap = new Map();
-    
+
     flaskData.forEach(upload => {
       const deviceId = upload.device_id;
       if (!deviceMap.has(deviceId)) {
         deviceMap.set(deviceId, {
           user_id: deviceId,
-          status: "idle", // Default status
-          location: {
-            lat: 6.5244, // Default Lagos coordinates
-            lng: 3.3792
-          },
+          status: "idle",
+          location: { lat: 6.5244, lng: 3.3792 },
           session_start: null,
           current_session_id: null,
-          latest_audio: `/uploads/${upload.audio_file}`,
+          latest_audio: `/api/uploads/${upload.audio_file}`,
           phone_number: `+234${deviceId}`,
           device_info: `Device-${deviceId}`,
           uploads: []
         });
       }
-      
+
       const device = deviceMap.get(deviceId);
       device.uploads.push(upload);
-      
-      // Use most recent upload timestamp
+
       if (!device.last_activity || new Date(upload.timestamp) > new Date(device.last_activity)) {
         device.last_activity = upload.timestamp;
       }
     });
 
     const users = Array.from(deviceMap.values());
-    
+
     return {
       active_sessions_count: users.filter(u => u.status === "listening").length,
       total_users: users.length,
       connection_status: "connected",
       users: users,
-      active_sessions: [], // No active sessions concept in Flask server
+      active_sessions: [],
       stats: {
         total_users: users.length,
         active_sessions: 0,
@@ -102,7 +86,6 @@ class ApiService {
     };
   }
 
-  // Fallback data when Flask server is unreachable
   getFallbackData() {
     return {
       active_sessions_count: 0,
@@ -120,9 +103,7 @@ class ApiService {
     };
   }
 
-  // Mock implementations for unsupported Flask features
   async startListening(userId) {
-    // Flask doesn't have session concept, return mock response
     return {
       status: "success",
       message: `Started monitoring device ${userId}`,
@@ -133,7 +114,6 @@ class ApiService {
   }
 
   async stopListening(userId) {
-    // Flask doesn't have session concept, return mock response
     return {
       status: "success",
       message: `Stopped monitoring device ${userId}`,
@@ -143,19 +123,18 @@ class ApiService {
   }
 
   async getLatestAudio(userId) {
-    // Try to get latest upload for this device
     try {
-      const flaskData = await this.request('/dashboard/data');
+      const flaskData = await this.request('/api/dashboard-data');
       const deviceUploads = flaskData.filter(u => u.device_id === userId);
-      
+
       if (deviceUploads.length > 0) {
-        const latest = deviceUploads[0]; // Already ordered by timestamp desc
+        const latest = deviceUploads[0];
         return {
           user_id: userId,
-          audio_url: `${this.baseURL}/uploads/${latest.audio_file}`,
-          duration: 0, // Not available in Flask data
+          audio_url: `${this.baseURL}/api/uploads/${latest.audio_file}`,
+          duration: 0,
           recorded_at: latest.timestamp,
-          file_size: 0 // Not available in Flask data
+          file_size: 0
         };
       } else {
         throw new Error("No audio found");
@@ -165,14 +144,13 @@ class ApiService {
     }
   }
 
-  // Other required methods (mock implementations)
   async getUsers() {
     const dashboardData = await this.getDashboardData();
     return { users: dashboardData.users };
   }
 
   async getActiveSessions() {
-    return { active_sessions: [] }; // Flask doesn't have sessions
+    return { active_sessions: [] };
   }
 
   async getDashboardStats() {
@@ -182,30 +160,24 @@ class ApiService {
 
   async getRecentRecordings(limit = 10) {
     try {
-      const flaskData = await this.request('/dashboard/data');
+      const flaskData = await this.request('/api/dashboard-data');
       const recordings = flaskData.slice(0, limit).map((upload, index) => ({
         id: `rec_${upload.device_id}_${index}`,
         user_id: upload.device_id,
         filename: upload.audio_file,
-        duration: 0, // Not available
+        duration: 0,
         created_at: upload.timestamp,
-        file_size: 0 // Not available
+        file_size: 0
       }));
-      
-      return {
-        recordings: recordings,
-        total: recordings.length,
-        limit: limit
-      };
+      return { recordings, total: recordings.length, limit };
     } catch (error) {
-      return { recordings: [], total: 0, limit: limit };
+      return { recordings: [], total: 0, limit };
     }
   }
 
   async getHealth() {
     try {
-      // Test Flask server connectivity
-      await this.request('/dashboard/data');
+      await this.request('/api/health');
       return {
         status: "healthy",
         timestamp: new Date().toISOString(),
@@ -220,18 +192,17 @@ class ApiService {
     }
   }
 
-  // Mock analytics endpoints
   async getHourlyActivity() {
     const hours = [];
     const activity = [];
     const currentHour = new Date().getHours();
-    
+
     for (let i = 0; i < 24; i++) {
       const hour = (currentHour - 23 + i) % 24;
       hours.push(`${hour.toString().padStart(2, '0')}:00`);
       activity.push(Math.floor(Math.random() * 10) + 1);
     }
-    
+
     return {
       labels: hours,
       data: activity,
@@ -241,28 +212,24 @@ class ApiService {
     };
   }
 
-  // File upload to Flask server
   async uploadRecording(userId, audioFile) {
     const formData = new FormData();
     formData.append('file', audioFile);
 
-    return this.request(`/upload/audio/${userId}`, {
+    return this.request(`/api/upload/audio/${userId}`, {
       method: 'POST',
       headers: {
         'Authorization': AUTH_HEADER
-        // Don't set Content-Type, let browser handle FormData
       },
-      body: formData,
+      body: formData
     });
   }
 }
 
-// Create and export singleton instance
 const apiService = new ApiService();
 
 export default apiService;
 
-// Named exports for specific functions
 export const {
   getDashboardData,
   getDashboardStats,

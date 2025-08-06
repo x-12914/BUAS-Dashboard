@@ -34,56 +34,19 @@ class ApiService {
   async getDashboardData() {
     try {
       const flaskData = await this.request('/api/dashboard-data');
-      return this.transformFlaskData(flaskData);
+      // Flask server returns data in the correct format already
+      return flaskData;
     } catch (error) {
+      console.error('Dashboard data fetch failed:', error);
       return this.getFallbackData();
     }
   }
 
+  // Keep this method for fallback scenarios
   transformFlaskData(flaskData) {
-    const now = new Date().toISOString();
-    const deviceMap = new Map();
-
-    flaskData.forEach(upload => {
-      const deviceId = upload.device_id;
-      if (!deviceMap.has(deviceId)) {
-        deviceMap.set(deviceId, {
-          user_id: deviceId,
-          status: "idle",
-          location: { lat: 6.5244, lng: 3.3792 },
-          session_start: null,
-          current_session_id: null,
-          latest_audio: `/api/uploads/${upload.audio_file}`,
-          phone_number: `+234${deviceId}`,
-          device_info: `Device-${deviceId}`,
-          uploads: []
-        });
-      }
-
-      const device = deviceMap.get(deviceId);
-      device.uploads.push(upload);
-
-      if (!device.last_activity || new Date(upload.timestamp) > new Date(device.last_activity)) {
-        device.last_activity = upload.timestamp;
-      }
-    });
-
-    const users = Array.from(deviceMap.values());
-
-    return {
-      active_sessions_count: users.filter(u => u.status === "listening").length,
-      total_users: users.length,
-      connection_status: "connected",
-      users: users,
-      active_sessions: [],
-      stats: {
-        total_users: users.length,
-        active_sessions: 0,
-        total_recordings: flaskData.length,
-        online_users: users.length
-      },
-      last_updated: now
-    };
+    // This method is no longer needed as Flask returns the correct format
+    // But keeping it for compatibility
+    return flaskData;
   }
 
   getFallbackData() {

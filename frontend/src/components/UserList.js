@@ -80,10 +80,11 @@ const UserList = ({ users = [], loading = false, onPlayAudio }) => {
   const handleStartListening = async (userId) => {
     setUserLoading(userId, true);
     try {
-      const response = await fetch(`http://localhost:8000/api/start-listening/${userId}`, {
+      const response = await fetch(`http://143.244.133.125:5000/api/start-listening/${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + btoa('admin:supersecret'),
         },
       });
       
@@ -106,10 +107,11 @@ const UserList = ({ users = [], loading = false, onPlayAudio }) => {
   const handleStopListening = async (userId) => {
     setUserLoading(userId, true);
     try {
-      const response = await fetch(`http://localhost:8000/api/stop-listening/${userId}`, {
+      const response = await fetch(`http://143.244.133.125:5000/api/stop-listening/${userId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + btoa('admin:supersecret'),
         },
       });
       

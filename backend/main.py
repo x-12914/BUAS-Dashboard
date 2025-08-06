@@ -43,16 +43,31 @@ app.add_middleware(
     allow_headers=["*"],  # Allow all headers
 )
 
-# Setup templates for HTML rendering
-templates = Jinja2Templates(directory="templates")
+# Setup templates for HTML rendering (optional)
+templates_dir = os.path.join(os.path.dirname(__file__), "templates")
+static_dir = os.path.join(os.path.dirname(__file__), "static")
 
-# Create static files directory for CSS/JS
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Create directories if they don't exist
+os.makedirs(templates_dir, exist_ok=True)
+os.makedirs(static_dir, exist_ok=True)
+
+templates = Jinja2Templates(directory=templates_dir)
+
+# Create static files directory for CSS/JS (only if directory exists)
+try:
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+except Exception as e:
+    print(f"Warning: Could not mount static files: {e}")
 
 # Initialize database on startup
 @app.on_event("startup")
 async def startup_event():
-    await init_db()
+    try:
+        await init_db()
+        print("FastAPI database initialized successfully")
+    except Exception as e:
+        print(f"Warning: Database initialization failed: {e}")
+        print("Continuing without database...")
 
 # IP Geolocation function
 def get_location_from_ip(ip_address: str):

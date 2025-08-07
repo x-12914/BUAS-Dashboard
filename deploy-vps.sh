@@ -5,6 +5,17 @@
 
 echo "🚀 Starting VPS deployment for BUAS Dashboard..."
 
+# Check if running as root or with sudo access
+if [ "$EUID" -eq 0 ]; then
+    echo "⚠️  Please don't run this script as root. Use a regular user with sudo access."
+    exit 1
+fi
+
+# Check if we have sudo access
+if ! sudo -n true 2>/dev/null; then
+    echo "📝 This script requires sudo access. Please ensure you have sudo privileges."
+fi
+
 # Update system packages
 sudo apt update && sudo apt upgrade -y
 
@@ -22,21 +33,53 @@ cd /opt/buas-dashboard
 # Clone or update project files
 # Note: Upload your project files to this directory
 
+# Pre-deployment checks
+echo "🔍 Running pre-deployment checks..."
+
+# Check if essential files exist
+if [ ! -f "ecosystem.config.js" ]; then
+    echo "❌ ecosystem.config.js not found. Make sure you're in the correct directory."
+    exit 1
+fi
+
+if [ ! -d "backend" ] || [ ! -d "frontend" ]; then
+    echo "❌ backend or frontend directory not found."
+    exit 1
+fi
+
+if [ ! -f "backend/main.py" ] || [ ! -f "backend/requirements.txt" ]; then
+    echo "❌ Essential backend files missing (main.py or requirements.txt)."
+    exit 1
+fi
+
+if [ ! -f "frontend/package.json" ]; then
+    echo "❌ frontend/package.json not found."
+    exit 1
+fi
+
+echo "✅ Pre-deployment checks passed"
+
 # Setup Python virtual environment for FastAPI
 python3 -m venv fastapi-env
 source fastapi-env/bin/activate
 
 # Install FastAPI dependencies
 cd backend
-pip install -r requirements.txt
+if [ -f "requirements.txt" ]; then
+    pip install -r requirements.txt
+    echo "✅ FastAPI dependencies installed"
+else
+    echo "❌ requirements.txt not found in backend directory"
+    exit 1
+fi
 
 # Setup PostgreSQL database
-sudo -u postgres createuser --interactive buas_user || echo "User may already exist"
-sudo -u postgres createdb buas_dashboard || echo "Database may already exist"
-sudo -u postgres psql -c "ALTER USER buas_user PASSWORD 'your_secure_password';"
+sudo -u postgres createuser -d -r -s buas_user 2>/dev/null || echo "User may already exist"
+sudo -u postgres createdb buas_dashboard -O buas_user 2>/dev/null || echo "Database may already exist"
+sudo -u postgres psql -c "ALTER USER buas_user PASSWORD 'your_secure_password';" 2>/dev/null || echo "Password may already be set"
 
 # Configure environment variables
-cat > ../backend/.env << EOF
+cat > .env << EOF
 DATABASE_URL=postgresql://buas_user:your_secure_password@localhost:5432/buas_dashboard
 HOST=0.0.0.0
 PORT=8000
@@ -44,18 +87,27 @@ DEBUG=false
 EOF
 
 # Initialize FastAPI database
-python -c "from database import init_db; init_db()"
+python -c "
+import asyncio
+from database import init_db
+
+async def main():
+    await init_db()
+    print('✅ Database initialized successfully')
+
+asyncio.run(main())
+"
 
 # Build React frontend
 cd ../frontend
-npm install
-npm run build
-
-# Setup Flask environment (in BUAS workspace)
-cd ../BUAS
-python3 -m venv flask-env
-source flask-env/bin/activate
-pip install -r requirements.txt
+if [ -f "package.json" ]; then
+    npm install
+    npm run build
+    echo "✅ Frontend built successfully"
+else
+    echo "❌ package.json not found in frontend directory"
+    exit 1
+fi
 
 # Start services with PM2
 echo "Starting services..."
@@ -64,10 +116,9 @@ echo "Starting services..."
 cd /opt/buas-dashboard
 pm2 start ecosystem.config.js --env production
 
-# Start Flask server (from BUAS directory)
-cd ../BUAS
-source flask-env/bin/activate
-pm2 start "python3 server.py" --name "buas-flask-server"
+# Note: Flask server (BUAS) is already running on VPS as separate workspace
+echo "📝 Note: Flask server (BUAS) should already be running on the VPS"
+echo "📝 If not, start it separately from the BUAS workspace"
 
 # Save PM2 configuration
 pm2 save
@@ -83,10 +134,24 @@ sudo ufw allow 8000
 sudo ufw --force enable
 
 echo "✅ Deployment complete!"
-echo "Services running:"
-echo "- FastAPI Backend: http://143.244.133.125:8000"
-echo "- Flask Server: http://143.244.133.125:5000"  
-echo "- React Frontend: http://143.244.133.125:3000"
 echo ""
-echo "Check status with: pm2 status"
-echo "View logs with: pm2 logs"
+echo "🌐 Services should be running at:"
+echo "- FastAPI Backend: http://143.244.133.125:8000"
+echo "- React Frontend: http://143.244.133.125:3000"
+echo "- Flask Server: http://143.244.133.125:5000 (separate BUAS workspace)"
+echo ""
+echo "🔍 Check services status:"
+echo "  pm2 status"
+echo ""
+echo "📊 View logs:"
+echo "  pm2 logs phone-dashboard-fastapi"
+echo "  pm2 logs phone-dashboard-frontend"
+echo ""
+echo "🔄 Restart services if needed:"
+echo "  pm2 restart phone-dashboard-fastapi"
+echo "  pm2 restart phone-dashboard-frontend"
+echo ""
+echo "⚠️  Remember:"
+echo "  1. Flask server (BUAS) is managed separately - it should already be running"
+echo "  2. Update database password in this script before running"
+echo "  3. Test all endpoints to ensure FastAPI and Flask can communicate"

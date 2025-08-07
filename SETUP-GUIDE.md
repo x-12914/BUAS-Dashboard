@@ -10,8 +10,10 @@ sed -i 's/your_secure_password/your_actual_password/g' deploy-vps.sh
 
 ### Step 2: Upload to VPS
 ```bash
-# Upload entire project to VPS
+# Upload main project to VPS
 scp -r . root@143.244.133.125:/opt/buas-dashboard/
+
+# Note: BUAS Flask server is already running on VPS as separate workspace
 ```
 
 ### Step 3: Deploy on VPS
@@ -30,17 +32,17 @@ chmod +x deploy-vps.sh
 # Check services status
 pm2 status
 
-# Should show 3 services running:
+# Should show 2 services running:
 # - phone-dashboard-fastapi
 # - phone-dashboard-frontend  
-# - buas-flask-server
+# (BUAS Flask server runs separately)
 ```
 
 ## 🌐 Access After Deployment
 
 - **Dashboard:** http://143.244.133.125:3000
-- **API Documentation:** http://143.244.133.125:8000/docs
-- **Flask API:** http://143.244.133.125:5000
+- **FastAPI Documentation:** http://143.244.133.125:8000/docs
+- **Flask API:** http://143.244.133.125:5000 (already running separately)
 
 ## �️ Local Development
 

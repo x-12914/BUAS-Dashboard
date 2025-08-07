@@ -11,7 +11,7 @@ A real-time phone monitoring dashboard with dual backend architecture for handli
 ## 🚀 Quick Start
 
 ### VPS Deployment (Recommended)
-All services run on VPS for optimal performance and data synchronization.
+FastAPI and Frontend deploy to VPS to connect with existing Flask server.
 
 ```bash
 # 1. Upload project to VPS
@@ -23,6 +23,8 @@ cd /opt/buas-dashboard
 chmod +x deploy-vps.sh
 ./deploy-vps.sh
 ```
+
+**Note:** Flask server (BUAS) is already running on VPS as separate workspace.
 
 ### Local Development
 ```bash
@@ -45,8 +47,8 @@ npm start
 ## 🌐 Access Points (After VPS Deployment)
 
 - **Dashboard:** http://143.244.133.125:3000
-- **Flask API:** http://143.244.133.125:5000
 - **FastAPI Docs:** http://143.244.133.125:8000/docs
+- **Flask API:** http://143.244.133.125:5000 (separate workspace)
 
 ## 🔐 Authentication
 
@@ -65,11 +67,12 @@ npm start
 
 ```
 BUAS-Dashboard/
-├── backend/          # FastAPI server
-├── frontend/         # React dashboard
-├── BUAS/            # Flask server (separate workspace)
+├── backend/          # FastAPI server (deploy to VPS)
+├── frontend/         # React dashboard (deploy to VPS)
 ├── deploy-vps.sh    # VPS deployment script
 └── ecosystem.config.js  # PM2 configuration
+
+Note: BUAS/ (Flask server) is separate workspace already on VPS
 ```
 - Session management and monitoring
 - RESTful API endpoints

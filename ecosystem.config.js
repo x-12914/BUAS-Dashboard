@@ -30,6 +30,5 @@ module.exports = {
       REACT_APP_API_URL: 'http://143.244.133.125:5000' // Points to Flask server
     }
   }]
-  // Note: Flask server should be started separately from BUAS workspace
-  // Start Flask first: cd ../BUAS && python3 server.py
+  // Note: Flask server (BUAS) runs separately as independent workspace on VPS
 }

@@ -5,17 +5,24 @@ from sqlalchemy.orm import sessionmaker, Session
 from datetime import datetime
 import os
 from typing import Generator
+from dotenv import load_dotenv
 
-# Database URL - Replace with your VPS PostgreSQL connection string
+# Load environment variables
+load_dotenv()
+
+# Database URL - VPS PostgreSQL connection
 DATABASE_URL = os.getenv(
     "DATABASE_URL", 
-    "postgresql://your_username:your_password@localhost:5432/phone_monitoring"  # Replace with your actual VPS database URL
+    "postgresql://buas_user:your_secure_password@localhost:5432/buas_dashboard"  # VPS PostgreSQL
 )
 
-# For local development, you can use SQLite
-if DATABASE_URL.startswith("postgresql://your_username"):
+# For local development, fall back to SQLite
+if "your_secure_password" in DATABASE_URL and not os.getenv("DATABASE_URL"):
     DATABASE_URL = "sqlite:///./phone_monitoring.db"
-    print("Using SQLite for development - Replace with VPS PostgreSQL URL")
+    print("⚠️  Using SQLite for local development")
+    print("📝 For VPS deployment, set DATABASE_URL environment variable")
+else:
+    print(f"🗄️  Using database: {DATABASE_URL.split('@')[1] if '@' in DATABASE_URL else 'SQLite'}")
 
 # Create SQLAlchemy engine
 engine = create_engine(

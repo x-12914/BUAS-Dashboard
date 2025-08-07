@@ -2,7 +2,7 @@ module.exports = {
   apps: [{
     name: 'phone-dashboard-fastapi',
     script: 'uvicorn',
-    args: 'main:app --host 0.0.0.0 --port 8000 --reload',
+    args: 'main:app --host 0.0.0.0 --port 8000',
     cwd: './backend',
     interpreter: 'python3',
     env: {
@@ -24,6 +24,9 @@ module.exports = {
     args: '-s build -l 3000',
     cwd: './frontend',
     env: {
+      REACT_APP_API_URL: 'http://143.244.133.125:5000' // Points to Flask server
+    },
+    env_production: {
       REACT_APP_API_URL: 'http://143.244.133.125:5000' // Points to Flask server
     }
   }]

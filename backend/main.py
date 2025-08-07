@@ -10,6 +10,11 @@ import json
 from datetime import datetime
 from typing import Optional, List
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
 from database import get_db, init_db
 from crud import (
     get_all_users, get_active_sessions, create_session, 
@@ -439,10 +444,18 @@ if __name__ == "__main__":
     os.makedirs("recordings", exist_ok=True)
     
     # Run the server
+    import os
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8000"))
+    debug = os.getenv("DEBUG", "true").lower() == "true"
+    
+    print(f"🚀 Starting FastAPI server on {host}:{port}")
+    print(f"📝 Debug mode: {debug}")
+    
     uvicorn.run(
         "main:app", 
-        host="0.0.0.0", 
-        port=8000, 
-        reload=True,
+        host=host, 
+        port=port, 
+        reload=debug,  # Only reload in debug mode
         log_level="info"
     )

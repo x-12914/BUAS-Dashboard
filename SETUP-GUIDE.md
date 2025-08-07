@@ -1,53 +1,102 @@
-# Setup & Troubleshooting Guide
+# Setup Guide
 
-## 🚀 How to Start the Servers
+## 🚀 VPS Deployment (Recommended)
 
-### Current Architecture
-- **Flask Server**: Already running online at `143.244.133.125:5000` (VPS)
-- **React Frontend**: Already running online at `143.244.133.125:3000` (VPS)
-- **FastAPI Server**: Run locally for additional dashboard features (optional)
-
-### Step 1: Start FastAPI Server (Optional - Local Only)
+### Step 1: Prepare for Deployment
 ```bash
+# Update database password in deployment script
+sed -i 's/your_secure_password/your_actual_password/g' deploy-vps.sh
+```
+
+### Step 2: Upload to VPS
+```bash
+# Upload entire project to VPS
+scp -r . root@143.244.133.125:/opt/buas-dashboard/
+```
+
+### Step 3: Deploy on VPS
+```bash
+# SSH into VPS
+ssh root@143.244.133.125
+
+# Navigate to project and deploy
+cd /opt/buas-dashboard
+chmod +x deploy-vps.sh
+./deploy-vps.sh
+```
+
+### Step 4: Verify Deployment
+```bash
+# Check services status
+pm2 status
+
+# Should show 3 services running:
+# - phone-dashboard-fastapi
+# - phone-dashboard-frontend  
+# - buas-flask-server
+```
+
+## 🌐 Access After Deployment
+
+- **Dashboard:** http://143.244.133.125:3000
+- **API Documentation:** http://143.244.133.125:8000/docs
+- **Flask API:** http://143.244.133.125:5000
+
+## �️ Local Development
+
+### Start All Services
+```bash
+# Terminal 1: FastAPI Backend
 cd backend
 pip install -r requirements.txt
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
+# Terminal 2: Flask Server
+cd BUAS
+pip install -r requirements.txt
+python server.py
+
+# Terminal 3: React Frontend
+cd frontend
+npm install
+npm start
 ```
-**Expected Output:** `Uvicorn running on http://0.0.0.0:8000`
 
-### Step 2: Access Online Services
-- **Flask Server**: `http://143.244.133.125:5000` (already running online)
-- **React Frontend**: `http://143.244.133.125:3000` (already running online)
-
-## 🔍 How to Use the System
-
-### Access the Dashboard
-1. Open browser to `http://143.244.133.125:3000` (VPS frontend)
-2. You'll see the phone monitoring dashboard with:
-   - Real-time user list from VPS Flask server
-   - Interactive map showing phone locations
-   - Session controls for each device
+## 🔍 Testing
 
 ### Test API Endpoints
 ```bash
-# Check VPS Flask server
-curl http://143.244.133.125:5000/api/health
+# Health check
+curl http://143.244.133.125:8000/
 
-# Check local FastAPI server (if running)
-curl http://localhost:8000/health
-
-# Get dashboard data from VPS Flask (with auth)
+# Dashboard data (with auth)
 curl -u admin:supersecret http://143.244.133.125:5000/api/dashboard-data
-```
 
-### Upload Audio from Phone
-```bash
-# Register a phone device (VPS Flask server)
+# Register phone
 curl -X POST http://143.244.133.125:5000/api/register \
   -H "Content-Type: application/json" \
   -d '{"phone_id": "test001", "device_name": "Test Phone"}'
+```
 
-# Upload audio file (VPS Flask server with auth)
+## 🔧 Troubleshooting
+
+### Common Issues
+- **Services not starting:** Check logs with `pm2 logs`
+- **Database connection:** Verify DATABASE_URL in .env
+- **Port conflicts:** Ensure ports 3000, 5000, 8000 are available
+- **CORS errors:** Check frontend can reach Flask at correct URL
+
+### Service Management
+```bash
+# Restart all services
+pm2 restart all
+
+# Stop all services
+pm2 stop all
+
+# View logs
+pm2 logs [service-name]
+```
 curl -X POST http://143.244.133.125:5000/api/upload-audio \
   -u admin:supersecret \
   -F "phone_id=test001" \

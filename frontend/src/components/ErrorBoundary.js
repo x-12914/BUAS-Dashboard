@@ -72,7 +72,7 @@ class ErrorBoundary extends React.Component {
               <p>If this problem persists:</p>
               <ul>
                 <li>Check your internet connection</li>
-                <li>Ensure the backend server is running on port 8000</li>
+                <li>Ensure the Flask backend server is running on port 5000</li>
                 <li>Try refreshing your browser</li>
                 <li>Clear your browser cache</li>
               </ul>

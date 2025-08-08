@@ -1,53 +1,46 @@
 # BUAS Phone Monitoring Dashboard
 
-A real-time phone monitoring dashboard with dual backend architecture for handling phone data uploads and providing interactive dashboard functionality.
+A React-based dashboard for monitoring phone activities with Flask backend integration.
 
 ## 🏗️ Architecture
 
-- **FastAPI Backend (Port 8000):** Database operations and phone monitoring logic
-- **Flask Server (Port 5000):** File uploads, audio processing, and API bridge  
-- **React Frontend (Port 3000):** Interactive dashboard with real-time updates
+```
+React Frontend (Port 3000) → Flask Backend (Port 5000) → Database
+```
+
+**Note**: This workspace contains only the **React Frontend**. The Flask backend (BUAS) is maintained as a separate workspace/repository.
 
 ## 🚀 Quick Start
 
-### VPS Deployment (Recommended)
-FastAPI and Frontend deploy to VPS to connect with existing Flask server.
-
+### VPS Deployment (Frontend Only)
 ```bash
-# 1. Upload project to VPS
-scp -r . root@143.244.133.125:/opt/buas-dashboard/
+# 1. Upload frontend project to VPS
+scp -r . user@143.244.133.125:/opt/buas-dashboard-frontend/
 
-# 2. SSH into VPS and deploy
-ssh root@143.244.133.125
-cd /opt/buas-dashboard
+# 2. SSH into VPS and deploy frontend
+ssh user@143.244.133.125
+cd /opt/buas-dashboard-frontend
 chmod +x deploy-vps.sh
 ./deploy-vps.sh
 ```
 
-**Note:** Flask server (BUAS) is already running on VPS as separate workspace.
+**Note:** Flask backend (BUAS) should be deployed separately from its own workspace.
 
 ### Local Development
 ```bash
-# FastAPI Backend
-cd backend
-pip install -r requirements.txt
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-
-# Flask Server (separate terminal)
-cd BUAS
-pip install -r requirements.txt  
-python server.py
-
-# Frontend (separate terminal)
+# Frontend (this workspace)
 cd frontend
 npm install
 npm start
+
+# Make sure Flask backend is running on port 5000
+# (Deploy Flask backend separately from BUAS workspace)
 ```
 
-## 🌐 Access Points (After VPS Deployment)
+## 🌐 Access Points (After Deployment)
 
-- **Dashboard:** http://143.244.133.125:3000
-- **FastAPI Docs:** http://143.244.133.125:8000/docs
+- **Dashboard:** http://143.244.133.125:3000  
+- **Flask API:** http://143.244.133.125:5000 (from BUAS workspace)
 - **Flask API:** http://143.244.133.125:5000 (separate workspace)
 
 ## 🔐 Authentication
@@ -65,24 +58,51 @@ npm start
 
 ## 📁 Project Structure
 
+## 📁 Project Structure
+
 ```
 BUAS-Dashboard/
-├── backend/          # FastAPI server (deploy to VPS)
-├── frontend/         # React dashboard (deploy to VPS)
-├── deploy-vps.sh    # VPS deployment script
-└── ecosystem.config.js  # PM2 configuration
+├── frontend/         # React dashboard
+├── deploy-vps.sh    # Frontend deployment script
+└── ecosystem.config.js  # PM2 configuration (frontend only)
 
-Note: BUAS/ (Flask server) is separate workspace already on VPS
+Note: BUAS/ (Flask server) is separate workspace/repository
 ```
-- Session management and monitoring
-- RESTful API endpoints
-- Responsive web interface
+
+## 🔧 Configuration
+
+### Frontend Configuration
+- **API Endpoint**: Points to Flask server at `http://143.244.133.125:5000`
+- **Environment Variables**: Configured in `.env.production` and `.env.development`
+
+### Backend Configuration  
+- **Flask Server**: Maintained in separate BUAS workspace/repository
+- **Database**: Configured in Flask workspace
+- **Authentication**: Basic auth (`admin:supersecret`)
+
+## 🚀 Deployment Notes
+
+1. **Frontend Deployment**: Use this workspace to deploy the React frontend
+2. **Backend Deployment**: Deploy Flask backend separately from BUAS workspace  
+3. **Service Communication**: Frontend → Flask → Database
+4. **Ports**: Frontend (3000), Flask (5000)
+
+## 📝 Development Workflow
+
+1. **Frontend Changes**: Make changes in this workspace
+2. **Backend Changes**: Make changes in BUAS workspace  
+3. **Testing**: Ensure Flask backend is running before testing frontend
+4. **Deployment**: Deploy each component from its respective workspace
 
 ## 🛠️ Tech Stack
 
-- **Backend:** Flask, FastAPI, SQLAlchemy, SQLite
+- **Backend:** Flask, SQLAlchemy
 - **Frontend:** React, Leaflet Maps, Chart.js
 - **Optional:** Celery, Redis (for background tasks)
+
+---
+
+**Important**: This is a frontend-only workspace. The Flask backend (BUAS) is maintained separately and should be deployed from its own repository.
 
 ## 📄 License
 

@@ -1,130 +1,120 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
 
-# VPS Deployment Script for BUAS Dashboard
-# Run this script on your VPS (143.244.133.125)
+# Lightweight deploy script that runs from the current repo directory.
+# Run as a non-root user with sudo privileges (eg. opt).
+# It will create a venv for backend and build frontend, then use pm2 to start services.
 
-echo "🚀 Starting VPS deployment for BUAS Dashboard..."
-
-# Check if running as root or with sudo access
-if [ "$EUID" -eq 0 ]; then
-    echo "⚠️  Please don't run this script as root. Use a regular user with sudo access."
-    exit 1
+ROOT_UID=0
+if [ "$EUID" -eq "$ROOT_UID" ]; then
+  echo "⚠️  Please don't run this script as root. Use a regular user with sudo access."
+  exit 1
 fi
 
-# Check if we have sudo access
-if ! sudo -n true 2>/dev/null; then
-    echo "📝 This script requires sudo access. Please ensure you have sudo privileges."
+echo "🚀 Starting VPS deployment for BUAS Dashboard (cwd: $(pwd))"
+
+# Ensure essential files are present in the current directory
+if [ ! -f "ecosystem.config.js" ]; then
+  echo "❌ ecosystem.config.js not found in $(pwd). Please run this script from the repository root."
+  exit 1
+fi
+if [ ! -d "frontend" ] || [ ! -d "backend" ]; then
+  echo "❌ frontend or backend directory missing in $(pwd)"
+  exit 1
 fi
 
-# Update system packages
+# OPTIONAL: update system packages (asks for sudo)
+echo "Updating apt packages (requires sudo)..."
 sudo apt update && sudo apt upgrade -y
 
-# Install required system packages
-sudo apt install -y python3 python3-pip python3-venv nodejs npm postgresql postgresql-contrib redis-server
+# Install system deps (nodejs should come from nodesource; installs npm via nodejs)
+echo "Installing system packages (sudo)..."
+sudo apt install -y python3 python3-pip python3-venv curl build-essential redis-server || true
 
-# Install PM2 globally for process management
-sudo npm install -g pm2 serve
-
-# Create project directory
-sudo mkdir -p /opt/buas-dashboard
-sudo chown $USER:$USER /opt/buas-dashboard
-cd /opt/buas-dashboard
-
-# Clone or update project files
-# Note: Upload your project files to this directory
-
-# Pre-deployment checks
-echo "🔍 Running pre-deployment checks..."
-
-# Check if essential files exist
-if [ ! -f "ecosystem.config.js" ]; then
-    echo "❌ ecosystem.config.js not found. Make sure you're in the correct directory."
-    exit 1
+# Ensure nodejs is installed (if not, install NodeSource Node.js 18)
+if ! command -v node >/dev/null 2>&1; then
+  echo "Node.js not found — installing Node 18 (Nodesource) (requires sudo)..."
+  curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+  sudo apt install -y nodejs
 fi
 
-if [ ! -d "backend" ] || [ ! -d "frontend" ]; then
-    echo "❌ backend or frontend directory not found."
-    exit 1
+# Install pm2 and serve globally (sudo because global)
+if ! command -v pm2 >/dev/null 2>&1; then
+  echo "Installing pm2 globally (requires sudo)..."
+  sudo npm install -g pm2 serve
 fi
 
-if [ ! -f "backend/main.py" ] || [ ! -f "backend/requirements.txt" ]; then
-    echo "❌ Essential backend files missing (main.py or requirements.txt)."
-    exit 1
-fi
+# -------- Backend setup (local venv) --------
+BACKEND_DIR="$(pwd)/backend"
+VENV_DIR="$(pwd)/fastapi-env"
 
-if [ ! -f "frontend/package.json" ]; then
-    echo "❌ frontend/package.json not found."
-    exit 1
-fi
+echo "Setting up Python virtualenv at: $VENV_DIR"
+python3 -m venv "$VENV_DIR"
+# shellcheck disable=SC1090
+source "$VENV_DIR/bin/activate"
 
-echo "✅ Pre-deployment checks passed"
+cd "$BACKEND_DIR"
 
-# Setup Python virtual environment for FastAPI
-python3 -m venv fastapi-env
-source fastapi-env/bin/activate
-
-# Install FastAPI dependencies
-cd backend
 if [ -f "requirements.txt" ]; then
-    pip install -r requirements.txt
-    echo "✅ FastAPI dependencies installed"
+  echo "Installing backend pip requirements..."
+  pip install --upgrade pip
+  pip install -r requirements.txt
 else
-    echo "❌ requirements.txt not found in backend directory"
-    exit 1
+  echo "❌ backend/requirements.txt not found"
+  deactivate
+  exit 1
 fi
 
-# Setup PostgreSQL database
-sudo -u postgres createuser -d -r -s buas_user 2>/dev/null || echo "User may already exist"
-sudo -u postgres createdb buas_dashboard -O buas_user 2>/dev/null || echo "Database may already exist"
-sudo -u postgres psql -c "ALTER USER buas_user PASSWORD 'your_secure_password';" 2>/dev/null || echo "Password may already be set"
-
-# Configure environment variables
-cat > .env << EOF
+# Create .env in the repo root (update password manually!)
+cat > ../.env << EOF
 DATABASE_URL=postgresql://buas_user:your_secure_password@localhost:5432/buas_dashboard
 HOST=0.0.0.0
 PORT=8000
 DEBUG=false
 EOF
 
-# Initialize FastAPI database
-python -c "
-import asyncio
-from database import init_db
-
-async def main():
-    await init_db()
-    print('✅ Database initialized successfully')
-
-asyncio.run(main())
-"
-
-# Build React frontend
-cd ../frontend
-if [ -f "package.json" ]; then
-    npm install
-    npm run build
-    echo "✅ Frontend built successfully"
-else
-    echo "❌ package.json not found in frontend directory"
-    exit 1
+# (Optional) Initialize DB if backend provides init function. This is safe but may vary.
+if python -c "import importlib, sys, pkgutil; print('ok')" >/dev/null 2>&1; then
+  # Example: adapt if your backend uses a different init routine
+  if python -c "import backend, sys; print('ok')" >/dev/null 2>&1; then
+    echo "Running backend DB init if available..."
+    # safe - run a script if present
+    if [ -f "init_db.py" ]; then
+      python init_db.py || echo "init_db.py ran with errors (continuing)"
+    fi
+  fi
 fi
 
-# Start services with PM2
-echo "Starting services..."
+deactivate
+cd ..
 
-# Start FastAPI backend
-cd /opt/buas-dashboard
-pm2 start ecosystem.config.js --env production
+# -------- Frontend build --------
+FRONTEND_DIR="$(pwd)/frontend"
+cd "$FRONTEND_DIR"
+if [ -f "package.json" ]; then
+  echo "Installing frontend dependencies (npm)..."
+  npm install
+  echo "Building frontend..."
+  npm run build
+else
+  echo "❌ frontend/package.json not found"
+  exit 1
+fi
+cd ..
 
-# Note: Flask server (BUAS) is already running on VPS as separate workspace
-echo "📝 Note: Flask server (BUAS) should already be running on the VPS"
-echo "📝 If not, start it separately from the BUAS workspace"
+# -------- PM2 startup (use ecosystem.config.js located in repo root) --------
+echo "Starting services via pm2 using ecosystem.config.js"
+# ensure pm2 uses this user's environment
+pm2 start ecosystem.config.js --env production || {
+  echo "pm2 start failed; attempt to show pm2 list"
+  pm2 list || true
+}
 
-# Save PM2 configuration
 pm2 save
-pm2 startup
+pm2 startup --skip-install
 
-# Configure firewall
+# Open firewall ports (sudo)
 sudo ufw allow 22
 sudo ufw allow 80
 sudo ufw allow 443
@@ -133,25 +123,7 @@ sudo ufw allow 5000
 sudo ufw allow 8000
 sudo ufw --force enable
 
-echo "✅ Deployment complete!"
-echo ""
-echo "🌐 Services should be running at:"
-echo "- FastAPI Backend: http://143.244.133.125:8000"
-echo "- React Frontend: http://143.244.133.125:3000"
-echo "- Flask Server: http://143.244.133.125:5000 (separate BUAS workspace)"
-echo ""
-echo "🔍 Check services status:"
-echo "  pm2 status"
-echo ""
-echo "📊 View logs:"
-echo "  pm2 logs phone-dashboard-fastapi"
-echo "  pm2 logs phone-dashboard-frontend"
-echo ""
-echo "🔄 Restart services if needed:"
-echo "  pm2 restart phone-dashboard-fastapi"
-echo "  pm2 restart phone-dashboard-frontend"
-echo ""
-echo "⚠️  Remember:"
-echo "  1. Flask server (BUAS) is managed separately - it should already be running"
-echo "  2. Update database password in this script before running"
-echo "  3. Test all endpoints to ensure FastAPI and Flask can communicate"
+echo "✅ Deployment actions finished."
+echo "Use 'pm2 status' to check the apps, 'pm2 logs <name>' to view logs."
+echo "Remember to replace the DB password in .env and in your DB."
+

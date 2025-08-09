@@ -1,5 +1,8 @@
 // api.js - Updated for Flask server with /api routes
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://143.244.133.125:5000'; // Flask server on port 5000
+// Robust environment variable handling for production
+const API_BASE_URL = (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) 
+  ? process.env.REACT_APP_API_URL 
+  : 'http://143.244.133.125:5000'; // Flask server on port 5000 (fallback)
 
 const AUTH_HEADER = 'Basic ' + btoa('admin:supersecret');
 

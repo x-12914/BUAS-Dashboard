@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import StatusBar from './StatusBar';
 import UserList from './UserList';
-import MapView from './MapView';
+// import MapView from './MapView';  // Temporarily disabled due to Leaflet issues
 import AudioPlayer from './AudioPlayer';
 import ConnectionStatus from './ConnectionStatus';
 import ApiService from '../services/api';
@@ -169,12 +169,21 @@ const Dashboard = () => {
             selectedUser={selectedUser}
             onUserSelect={setSelectedUser}
           />
-          <MapView
-            users={dashboardData?.users}
-            onUserSelect={setSelectedUser}
-            selectedUser={selectedUser}
-            isLoading={dashboardLoading}
-          />
+          {/* MapView temporarily disabled due to Leaflet "M is not a constructor" error */}
+          <div className="map-placeholder" style={{
+            height: '400px', 
+            border: '2px dashed #ccc', 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            backgroundColor: '#f9f9f9',
+            borderRadius: '8px',
+            flexDirection: 'column'
+          }}>
+            <h3>Map View Temporarily Disabled</h3>
+            <p>Fixing Leaflet library issues...</p>
+            <p>Users: {dashboardData?.users?.length || 0}</p>
+          </div>
         </div>
       </div>
 

@@ -1,8 +1,21 @@
 // api.js - Updated for Flask server with /api routes
 // Robust environment variable handling for production
-const API_BASE_URL = (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) 
-  ? process.env.REACT_APP_API_URL 
-  : 'http://143.244.133.125:5000'; // Flask server on port 5000 (fallback)
+const getApiUrl = () => {
+  // For production build, use hardcoded VPS IP to avoid DNS issues
+  if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+    return 'http://143.244.133.125:5000';
+  }
+  
+  // For development, try environment variable first
+  if (typeof process !== 'undefined' && process.env && process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Final fallback
+  return 'http://143.244.133.125:5000';
+};
+
+const API_BASE_URL = getApiUrl();
 
 const AUTH_HEADER = 'Basic ' + btoa('admin:supersecret');
 
